@@ -1,0 +1,1 @@
+Economy bot for discord
