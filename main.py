@@ -63,5 +63,5 @@ async def on_member_join(member):
 
 
 bot.add_cog(Things(bot))
-TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg.nRpgIdkljkqhpZdPcMDAHyiOrjI"
+TOKEN = "BOT_TOKEN"
 bot.run(TOKEN)
