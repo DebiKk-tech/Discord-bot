@@ -21,6 +21,7 @@ class EconomicsUser:
         self.banking_left = 0
         self.banking_summ = 0
         self.banking_per_day = 0
+        self.last_work = self.last_time_earnings
 
     def get_balance(self):
         return self.money

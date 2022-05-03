@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 from discord.ext import commands
 import random
@@ -18,6 +20,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 users = {}
 items = {}
+work_cooldown = datetime.timedelta(hours=5)
 
 
 class Things(commands.Cog):
@@ -218,6 +221,29 @@ class Things(commands.Cog):
             else:
                 await ctx.channel.send('У вас нет кредитов!')
 
+    @commands.command(name='работать')
+    async def work(self, ctx):
+        user = users[ctx.author.id]
+        print(datetime.datetime.now() - user.last_work)
+        print(work_cooldown)
+        if datetime.datetime.now() - user.last_work > work_cooldown:
+            user.last_work = datetime.datetime.now()
+            money = random.randint(20, 200)
+            await user.add_money(money)
+            await ctx.channel.send(f'Вы заработали {money} рублей')
+        else:
+            await ctx.channel.send('Вам нужно подождать, прежде чем работать')
+
+    @commands.command(name='поставить-перезарядку-работы')
+    async def set_work_cooldown(self, ctx, mins):
+        global work_cooldown
+        if not self.check_if_admin(ctx.author):
+            await ctx.channel.send(f'Это команда только для <@&{self.admin_role_id}>')
+            return
+        mins = int(mins)
+        work_cooldown = datetime.timedelta(minutes=mins)
+        await ctx.channel.send('Перезарядка работы изменена')
+
 
 @bot.event
 async def on_ready():
@@ -251,5 +277,5 @@ async def on_message(message):
 
 
 bot.add_cog(Things(bot))
-TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg.dV0FKx5vNcAAzkgzo6ZDNjeA0qU"
+TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg.3ZYiRP1EUP-2HtXjokX_hzcDbMg"
 bot.run(TOKEN)
