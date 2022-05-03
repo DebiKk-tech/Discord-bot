@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from discord.utils import get
 
@@ -16,12 +17,18 @@ class EconomicsUser:
         self.last_time_earnings = datetime.datetime.now() - datetime.timedelta(10)
         self.items = []
         self.member = get(guild.members, id=self.id)
+        self.banking = False
+        self.banking_left = 0
+        self.banking_summ = 0
+        self.banking_per_day = 0
 
     def get_balance(self):
         return self.money
 
-    def add_money(self, amount):
+    async def add_money(self, amount):
         self.money += amount
+        await self.member.create_dm()
+        await self.member.dm_channel.send(f'Ваш баланс изменился на {amount} рублей')
 
     def get_id(self):
         return self.id
@@ -59,3 +66,18 @@ class EconomicsUser:
 
     def remove_item(self, item):
         self.items.remove(item)
+
+    async def start_banking(self, summ, time):
+        self.banking = True
+        percent = 0.05
+        self.banking_summ, self.banking_left = summ, summ + summ * percent * time
+        await self.add_money(self.banking_summ)
+        self.banking_per_day = self.banking_left // time
+        while self.banking_left > 0:
+            self.banking_left -= self.banking_per_day
+            await self.add_money(-self.banking_per_day)
+            await asyncio.sleep(60)
+        self.banking = False
+        self.banking_left = 0
+        self.banking_summ = 0
+        self.banking_per_day = 0

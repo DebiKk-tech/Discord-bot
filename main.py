@@ -31,10 +31,10 @@ class Things(commands.Cog):
             return True
         return False
 
-    def change_balance(self, user_id, amount):
+    async def change_balance(self, user_id, amount):
         for user in users:
             if user == user_id:
-                users[user].add_money(amount)
+                await users[user].add_money(amount)
                 return
 
     @commands.command(name='добавить-предмет')
@@ -81,7 +81,7 @@ class Things(commands.Cog):
     async def add_money(self, ctx, target, amount=1000):
         if self.check_if_admin(ctx.author):
             target = int(target.lstrip('<@').rstrip('>'))
-            self.change_balance(target, amount)
+            await self.change_balance(target, amount)
             await ctx.channel.send(f'Добавлено {amount} рублей пользователю <@{target}> \n Теперь у него'
                                    f'{users[target].get_balance()} рублей')
         else:
@@ -115,10 +115,10 @@ class Things(commands.Cog):
             dice = random.randint(1, 6)
             await ctx.channel.send(f'На игральном кубике выпало число {dice}, вы ставили на {number}')
             if dice == number:
-                self.change_balance(ctx.author.id, bet * 2)
+                await self.change_balance(ctx.author.id, bet * 2)
                 await ctx.channel.send(f'Вы выиграли в кости и получили {bet * 2} рублей')
             else:
-                self.change_balance(ctx.author.id, -bet)
+                await self.change_balance(ctx.author.id, -bet)
                 await ctx.channel.send(f'Вы проиграли в кости и потеряли {bet} рублей')
         if game == 'рулетка':
             if not ('0' <= str(number) <= '36' or number in ['красный', 'черный', 'нечетный', 'четный']):
@@ -131,16 +131,16 @@ class Things(commands.Cog):
                 color = CASINO_ROULETTE_COLORS[ball]
                 output = 'Выпал шарик: ' + color + ' ' + str(ball)
             if ball == number:
-                self.change_balance(ctx.author.id, bet * 34)
+                await self.change_balance(ctx.author.id, bet * 34)
                 output += f'\nВоу! Вы сорвали джекпот, поставив на {number}, ведь выпало {ball}! Вы получаете {bet * 34} рублей'
             elif color == number:
-                self.change_balance(ctx.author.id, bet)
+                await self.change_balance(ctx.author.id, bet)
                 output += f'\nПоздравляем! Вы ставили на то, что выпадет мячик цвета {color}, и он выпал. Вы выиграли {bet} рублей'
             elif (number == 'нечетный' and ball % 2 == 1) or (number == 'четный' and ball % 2 == 0):
-                self.change_balance(ctx.author.id, bet)
+                await self.change_balance(ctx.author.id, bet)
                 output += f'\nПоздравляем! Вы ставили на то, что выпадет {number} номер, и он выпал. Вы выиграли {bet} рублей'
             else:
-                self.change_balance(ctx.author.id, -bet)
+                await self.change_balance(ctx.author.id, -bet)
                 output += f'\nВы проиграли {bet} рублей'
             await ctx.channel.send(output)
 
@@ -158,6 +158,9 @@ class Things(commands.Cog):
                 await items[item].bought(users[ctx.author.id], ctx.channel)
                 return
             if not action:
+                if not items:
+                    await ctx.channel.send('Предметов пока нет')
+                    return
                 await ctx.channel.send(f'Предмет: {item}, стоит {items[item].price}')
 
     @commands.command(name='вещи')
@@ -181,6 +184,40 @@ class Things(commands.Cog):
         role_id = role.lstrip('<@&').rstrip('>')
         roles_income[int(role_id)] = int(income)
 
+    @commands.command(name='передать-деньги')
+    async def give_money(self, ctx, target, amount: int):
+        if amount <= 0:
+            await ctx.channel.send('Количество передаваемых денег должно быть больше нуля')
+            return
+        sender = users[ctx.author.id]
+        if sender.money < amount:
+            await ctx.channel.send('У вас недостаточно денег')
+            return
+        getter_id = int(target.lstrip('<@').rstrip('>'))
+        if getter_id not in users:
+            await ctx.channel.send('Получателя не существует')
+            return
+        await sender.change_balance(-amount)
+        await users[getter_id].change_balance(amount)
+        await ctx.channel.send(f'Отправлена сумма {amount} пользователю <@{getter_id}>')
+
+    @commands.command(name='банк')
+    async def bank(self, ctx, option, summa=0, time=0):
+        user = users[ctx.author.id]
+        if option == 'кредит':
+            print('Зашел в иф')
+            summa = int(summa)
+            time = int(time)
+            if not user.banking and summa > 0 and time >= 5 and summa % time == 0:
+                print('Прошел проверку')
+                await ctx.channel.send(f'Вы взяли кредит на сумму {summa}, на время {time}. Ежедневная выплата - {(summa + summa * 0.05 * time) // time}')
+                await user.start_banking(summa, time)
+        if option == 'инфо':
+            if user.banking:
+                await ctx.channel.send(f'У вас есть кредит на сумму {user.banking_summ}, ежедневная выплата - {user.banking_per_day}. Осталось выплатить {user.banking_left}')
+            else:
+                await ctx.channel.send('У вас нет кредитов!')
+
 
 @bot.event
 async def on_ready():
@@ -188,11 +225,11 @@ async def on_ready():
         members_list = guild.members
         for member in members_list:
             users[member.id] = EconomicsUser(member.id, member.guild)
-    guilds_list = bot.guilds
-    for guild in []:  # guilds_list:
+    guilds_list = []  # bot.guilds
+    for guild in guilds_list:
         for channel in guild.text_channels:
             await channel.send('Бот-экономика готов к работе')
-    print('Ready!')
+    print(f'Ready!, activated: {datetime.datetime.now()}')
 
 
 @bot.event
@@ -214,5 +251,5 @@ async def on_message(message):
 
 
 bot.add_cog(Things(bot))
-TOKEN = "TOKEN"
+TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg.dV0FKx5vNcAAzkgzo6ZDNjeA0qU"
 bot.run(TOKEN)
