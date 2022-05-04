@@ -2,9 +2,7 @@ import asyncio
 import datetime
 from discord.utils import get
 
-roles_income = {
-    966040422050857084: 1010
-}
+roles_income = {}
 
 
 class EconomicsUser:
@@ -12,7 +10,7 @@ class EconomicsUser:
         self.money = 100
         self.id = id
         self.level = 1
-        self.nextlevel = self.level * 100
+        self.nextlevel = self.level * 200
         self.xp = 0
         self.last_time_earnings = datetime.datetime.now() - datetime.timedelta(10)
         self.items = []
@@ -27,6 +25,8 @@ class EconomicsUser:
         return self.money
 
     async def add_money(self, amount):
+        if amount == 0:
+            return
         self.money += amount
         await self.member.create_dm()
         await self.member.dm_channel.send(f'Ваш баланс изменился на {amount} рублей')
@@ -38,8 +38,8 @@ class EconomicsUser:
         if self.xp >= self.nextlevel:
             self.xp -= self.nextlevel
             self.level += 1
-            self.nextlevel = self.level * 100
-            self.add_money(100 * self.level)
+            self.nextlevel = self.level * 200
+            self.add_money(200 * self.level)
             return True
         return False
 

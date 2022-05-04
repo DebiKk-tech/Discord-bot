@@ -42,11 +42,17 @@ class Things(commands.Cog):
 
     @commands.command(name='добавить-предмет')
     async def create_item(self, ctx, name, price):
+        if not self.check_if_admin(ctx.author):
+            await ctx.channel.send(f'Это команда только для <@&{self.admin_role_id}>')
+            return
         items[name] = ShopItem(int(price), name, ctx.guild)
         await ctx.channel.send(f'В магазин успешно добавлен предмет {name} по цене {price}')
 
     @commands.command(name='настроить-предмет')
     async def edit_item(self, ctx, name, parameter, value):
+        if not self.check_if_admin(ctx.author):
+            await ctx.channel.send(f'Это команда только для <@&{self.admin_role_id}>')
+            return
         if parameter == 'роль-дана':
             role_id = value.lstrip('<@&').rstrip('>')
             items[name].role_given = int(role_id)
@@ -60,6 +66,17 @@ class Things(commands.Cog):
             items[name].message = value
         elif parameter == 'деньги':
             items[name].money_given = int(value)
+        elif parameter == 'уровень':
+            items[name].level_needed = int(value)
+
+    @commands.command(name='убрать-предмет')
+    async def delete_item(self, ctx, name):
+        if not self.check_if_admin(ctx.author):
+            await ctx.channel.send(f'Это команда только для <@&{self.admin_role_id}>')
+            return
+        if name in items:
+            items.pop(name)
+            await ctx.channel.send(f'Предмет {name} удален из магазина')
 
     @commands.command(name='поставить-роль-админа')
     async def set_admin_role(self, ctx, role):
@@ -184,6 +201,9 @@ class Things(commands.Cog):
 
     @commands.command(name='доход-роли')
     async def role_income(self, ctx, role, income):
+        if not self.check_if_admin(ctx.author):
+            await ctx.channel.send(f'Эта команда только для <@&{self.admin_role_id}>')
+            return
         role_id = role.lstrip('<@&').rstrip('>')
         roles_income[int(role_id)] = int(income)
 
@@ -211,7 +231,7 @@ class Things(commands.Cog):
             print('Зашел в иф')
             summa = int(summa)
             time = int(time)
-            if not user.banking and summa > 0 and time >= 5 and summa % time == 0:
+            if not user.banking and summa > 0 and time >= 5 and summa % time == 0 and user.money > 0:
                 print('Прошел проверку')
                 await ctx.channel.send(f'Вы взяли кредит на сумму {summa}, на время {time}. Ежедневная выплата - {(summa + summa * 0.05 * time) // time}')
                 await user.start_banking(summa, time)
@@ -235,14 +255,27 @@ class Things(commands.Cog):
             await ctx.channel.send('Вам нужно подождать, прежде чем работать')
 
     @commands.command(name='поставить-перезарядку-работы')
-    async def set_work_cooldown(self, ctx, mins):
+    async def set_work_cooldown(self, ctx, hours=0, mins=0):
         global work_cooldown
         if not self.check_if_admin(ctx.author):
             await ctx.channel.send(f'Это команда только для <@&{self.admin_role_id}>')
             return
+        hours = int(hours)
         mins = int(mins)
-        work_cooldown = datetime.timedelta(minutes=mins)
+        work_cooldown = datetime.timedelta(hours=hours, minutes=mins)
         await ctx.channel.send('Перезарядка работы изменена')
+
+    @commands.command(name='лидерборд')
+    async def leaderboard(self, ctx):
+        users_list = list(users.values())
+        users_list.remove(users[bot.user.id])
+        users_list = sorted(users_list, key=lambda x: x.get_balance(), reverse=True)
+        output = ''
+        for num, us in enumerate(users_list):
+            if num > 19:
+                break
+            output += f'Место {num + 1} - <@{us.id}>, баланс {us.get_balance()}\n'
+        await ctx.channel.send(output)
 
 
 @bot.event
@@ -277,5 +310,5 @@ async def on_message(message):
 
 
 bot.add_cog(Things(bot))
-TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg.3ZYiRP1EUP-2HtXjokX_hzcDbMg"
+TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg._XX_Q9OrsQtD2qMAS9trGIYHCeA"
 bot.run(TOKEN)

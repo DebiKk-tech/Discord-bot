@@ -2,16 +2,17 @@ from discord.utils import get
 
 
 class ShopItem:
-    def __init__(self, price, name, guild, role_given=False, money_given=False, message=False, role_taken=False, role_needed=False):
+    def __init__(self, price, name, guild):
         self.price = price
         self.owner = False
         self.name = name
         self.guild = guild
-        self.role_given = role_given
-        self.money_given = money_given
-        self.message = message
-        self.role_needed = role_needed
-        self.role_taken = role_taken
+        self.role_given = False
+        self.money_given = False
+        self.message = False
+        self.role_needed = False
+        self.role_taken = False
+        self.level_needed = False
 
     async def bought(self, buyer, channel):
         if buyer.get_balance() >= self.price:
@@ -23,6 +24,9 @@ class ShopItem:
     async def activate(self, channel):
         if self.role_needed and get(self.guild.roles, id=self.role_needed) not in self.owner.member.roles:
             await channel.send(f'Вам нужна роль <@&{self.role_needed}> чтобы использовать {self.name}')
+            return
+        if self.level_needed and self.owner.level < self.level_needed:
+            await channel.send(f'Вам нужен уровень {self.level_needed} чтобы использовать {self.name}')
             return
         self.owner.remove_item(self)
         await channel.send(f'Вы использовали: {self.name}')
