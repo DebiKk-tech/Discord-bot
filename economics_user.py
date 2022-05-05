@@ -77,7 +77,7 @@ class EconomicsUser:
         while self.banking_left > 0:
             self.banking_left -= self.banking_per_day
             await self.add_money(-self.banking_per_day)
-            await asyncio.sleep(60)
+            await asyncio.sleep(3600 * 24)
         self.banking = False
         self.banking_left = 0
         self.banking_summ = 0

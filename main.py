@@ -26,7 +26,6 @@ work_cooldown = datetime.timedelta(hours=5)
 class Things(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.admin_role_id = 966040422050857084
 
     def check_if_admin(self, author):
         author_roles = list(map(lambda x: int(x.id), author.roles))
@@ -233,7 +232,7 @@ class Things(commands.Cog):
             time = int(time)
             if not user.banking and summa > 0 and time >= 5 and summa % time == 0 and user.money > 0:
                 print('Прошел проверку')
-                await ctx.channel.send(f'Вы взяли кредит на сумму {summa}, на время {time}. Ежедневная выплата - {(summa + summa * 0.05 * time) // time}')
+                await ctx.channel.send(f'Вы взяли кредит на сумму {summa}, на время {time}. Ежедневная выплата - {(summa + summa * 0.05 * time) // time}. Суммарная задолженность - {summa + summa * 0.05 * time}')
                 await user.start_banking(summa, time)
         if option == 'инфо':
             if user.banking:
@@ -310,5 +309,5 @@ async def on_message(message):
 
 
 bot.add_cog(Things(bot))
-TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg._XX_Q9OrsQtD2qMAS9trGIYHCeA"
+TOKEN = ""
 bot.run(TOKEN)
