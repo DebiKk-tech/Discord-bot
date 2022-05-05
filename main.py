@@ -309,5 +309,5 @@ async def on_message(message):
 
 
 bot.add_cog(Things(bot))
-TOKEN = ""
+TOKEN = "OTY2MzY3OTM2NTcyOTY5MDEw.YmAuRg.CEk7SaVIvUK9ZPvpEVE6nR9o3oU"
 bot.run(TOKEN)
